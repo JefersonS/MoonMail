@@ -99,7 +99,12 @@ class AttachRecipientsService {
     debug('= AttachRecipientsService._notifyToSendSMS', JSON.stringify(this.campaignMessage));
     try {  
       const campaign = this.campaignMessage.campaign;
-      const user = this.campaignMessage.user
+      const user = this.campaignMessage.user;
+
+      //send SMS to those who didn't see the feature, null and undefined should still get SMSs
+      if(!user.notifications){
+        user.notifications = { };
+      }
   
       if (campaign && campaign.scheduledAt && user && user.phoneNumber && user.notifications && user.notifications.isSmsOnDeliveryEnabled != false) {
         const snsParams = {
