@@ -2,19 +2,29 @@
 import * as fs from 'fs';
 import * as jwt from 'jsonwebtoken';
 import { GetUserAccountService } from './get_user_account_service';
+import { S3 } from 'aws-sdk'
+
+const s3 = new S3();
+
+const params = {
+  Bucket: "token-pem-file",
+  Key: "auth.pem"
+};
 
 const decrypt = function decrypt(authToken) {
   const cert = fs.readFileSync('lib/certs/auth.pem');
-  return new Promise((resolve, reject) => {
-    const tokenWithoutBearer = authToken.split(' ')[1];
-    jwt.verify(tokenWithoutBearer, cert, { algorithms: ['RS256'] }, (err, decoded) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(Object.assign({}, decoded, decoded.app_metadata));
-      }
+  s3.getObject(params).promise().then(f => {
+    return new Promise((resolve, reject) => {
+      const tokenWithoutBearer = authToken.split(' ')[1];
+      jwt.verify(tokenWithoutBearer, f, { algorithms: ['RS256'] }, (err, decoded) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(Object.assign({}, decoded, decoded.app_metadata));
+        }
+      });
     });
-  });
+  })
 };
 
 const getUserContext = function getUserContext(userId) {
