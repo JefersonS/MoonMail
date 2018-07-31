@@ -111,7 +111,16 @@ class DeliverCampaignService {
   async _checkListContact(campaign) {
     const list = await List.get(this.userId, campaign.listId)
     if (!list.contact) throw 'Please, fill in all the mandatory items in your list settings'
-    else return campaign
+    if(!list.addressString ||
+        !list.address2String ||
+        !list.cityString ||
+        !list.companyString ||
+        !list.countryString ||
+        !list.descriptionString ||
+        !list.stateString ||
+        !list.websiteUrlString ||
+        !list.zipCodeString ) return 'Please, fill in all the mandatory items in your list settings'
+    return campaign
   }
 
   _checkCampaign(campaign) {
