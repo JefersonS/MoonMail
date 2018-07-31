@@ -24,7 +24,7 @@ class DeliverCampaignService {
     debug('= DeliverCampaignService.sendCampaign', `Sending campaign with id ${this.campaignId}`);
     return this.checkUserQuota()
       .then(() => this._getCampaign())
-      .then(campaign => this._checkListContent(campaign))
+      .then(campaign => this._checkListContact(campaign))
       .then(campaign => this._checkCampaign(campaign))
       .then(campaign => this._compressCampaignBody(campaign))
       .then(campaign => this._buildCampaignMessage(campaign, this.campaignMetadata))
@@ -108,9 +108,9 @@ class DeliverCampaignService {
     });
   }
 
-  async _checkListContent(campaign) {
+  async _checkListContact(campaign) {
     const list = await List.get(this.userId, campaign.listId)
-    if (!list.content) throw 'Please, fill in all the mandatory items in your list settings'
+    if (!list.contact) throw 'Please, fill in all the mandatory items in your list settings'
     else return campaign
   }
 
