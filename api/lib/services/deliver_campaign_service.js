@@ -119,7 +119,7 @@ class DeliverCampaignService {
         !list.descriptionString ||
         !list.stateString ||
         !list.websiteUrlString ||
-        !list.zipCodeString ) return 'Please, fill in all the mandatory items in your list settings'
+        !list.zipCodeString ) throw 'Please, fill in all the mandatory items in your list settings'
     return campaign
   }
 
