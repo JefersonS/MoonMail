@@ -24,6 +24,7 @@ class DeliverCampaignService {
     debug('= DeliverCampaignService.sendCampaign', `Sending campaign with id ${this.campaignId}`);
     return this.checkUserQuota()
       .then(() => this._getCampaign())
+      .then(campaign => this._checkListContent(campaign))
       .then(campaign => this._checkCampaign(campaign))
       .then(campaign => this._compressCampaignBody(campaign))
       .then(campaign => this._buildCampaignMessage(campaign, this.campaignMetadata))
@@ -105,6 +106,12 @@ class DeliverCampaignService {
       const compressedCampaign = Object.assign({}, campaign, { body: compressedBody });
       resolve(compressedCampaign);
     });
+  }
+
+  async _checkListContent(campaign) {
+    const list = await List.get(this.userId, campaign.listId)
+    if (!list.content) throw 'Please, fill in all the mandatory items in your list settings'
+    else return campaign
   }
 
   _checkCampaign(campaign) {
