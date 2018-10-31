@@ -1,0 +1,66 @@
+# NOTE: update this with your service name
+service: moonmail-delivery
+
+# Use the serverless-webpack plugin to transpile ES6
+plugins:
+  - serverless-webpack
+  - serverless-offline
+  - serverless-step-functions
+  - serverless-pseudo-parameters
+
+custom:
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+
+provider:
+  name: aws
+  profile: ${opt:profile}
+  runtime: nodejs8.10
+  stage: ${opt:stage}
+  region: ${opt:region}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:*
+        - ses:*
+      Resource: "*"
+
+stepFunctions:
+  stateMachines:
+  # Data gathering - gets data and returns only what's needed
+    dataGathering:
+      definition:
+        Comment: "Gets all the data necessary to the delivery process"
+        StartAt: GetCampaign
+        States:
+          GetCampaign:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-getCampaign"
+            ResultPath: "$.campaign"
+            Next: GetUser
+          GetUser:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-getUser"
+            ResultPath: "$.user"
+            Next: GetList
+          GetList:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-getList"
+            ResultPath: "$.list"
+            Next: CheckTotalRecipients
+          OrganizeData:
+             Type: Task
+             Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-organizeData"
+             ResultPath: "$."
+             End: true
+ 
+functions:
+  getCampaign:
+    handler: handler.getCampaign
+  getUser:
+    handler: handler.getUser
+  getList:
+    handler: handler.getList
+  organizeData:
+    handler: handler.organizeData
