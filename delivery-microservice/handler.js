@@ -1,5 +1,6 @@
 import { DynamoDB } from 'aws-sdk'
 import { functions } from './src/functionsHandler'
+import { plansLimit } from './src/libs/plansLimits'
 
 const DB = new DynamoDB.DocumentClient()
 
@@ -41,6 +42,17 @@ export const organizeData = async (event) => {
     const dependencies = {}
     return await functions(dependencies).organizeData(event)
   } catch (e) {
+    // log where needed
+    // log to cloud watch
+    throw error
+  }
+}
+
+export const verifyUserPlanLimits = async (event) => {
+  try {
+    const dependencies = { plansLimit }
+    return await functions(dependencies).verifyUserPlanLimits(event.planData)
+  } catch (error) {
     // log where needed
     // log to cloud watch
     throw error

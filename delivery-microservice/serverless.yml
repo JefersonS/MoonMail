@@ -54,6 +54,85 @@ stepFunctions:
              Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-organizeData"
              ResultPath: "$."
              End: true
+  # Data checks
+    dataVerifier:
+      definition: "Checks all the data and reject anything out of place"
+          VerifyUserPlanLimits:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-verifyUserPlanLimits"
+            ResultPath: "$.planLimits"
+            Next: CheckTotalRecipients
+          VerifyUserPlan:
+            Type: Choice
+            - Variable: "$.planLimits.status"
+              StringEquals: "passed"
+              Next: PlanPassed
+            - Variable: "$.planLimits.status"
+              StringEquals: "rejected"
+              Next: PlanRejected
+            default: PlanRejected
+          PlanPassed:
+            Type: Pass
+            Next: VerifyUserScore
+          PlanRejected:
+            Type: Pass
+            Next: NotifyUser
+          NotifyUser:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-notifyUser"
+            End: true
+          VerifyUserScore:
+            Type: Choice
+            Choices: 
+            - Variable: "$.reputationData.reputation"
+              NumericLessThanEquals: 15
+              Next: SetBlockedScore
+            - And:
+              - Variable: "$.reputationData.reputation"
+                NumericGreaterThan: 15
+              - Variable: "$.reputationData.reputation"
+                NumericLessThanEquals: 30
+              Next: SetBadScore
+            - And:
+              - Variable: "$.reputationData.reputation"
+                NumericGreaterThan: 30
+              - Variable: "$.reputationData.reputation"
+                NumericLessThanEquals: 50
+              Next: SetLowScore
+            - And:
+              - Variable: "$.reputationData.reputation"
+                NumericGreaterThan: 50
+              - Variable: "$.reputationData.reputation"
+                NumericLessThanEquals: 75
+              Next: SetMediumScore
+            - Variable: "$.reputationData.reputation"
+              NumericGreaterThan: 75
+              Next: SetHighScore
+          SetBlockedScore:
+            Type: Pass
+            Result: "lesser15"
+            ResultPath: "$.sendingInfo.scoreProfile"
+            Next: NotifyUser
+          SetBadScore:
+            Type: Pass
+            Result: "bigger15Lesser30"
+            ResultPath: "$.sendingInfo.scoreProfile"
+            Next: NotifyUser
+          SetLowScore:
+            Type: Pass
+            Result: "bigger30Lesser50"
+            ResultPath: "$.sendingInfo.scoreProfile"
+            Next: NotifyUser
+          SetMediumScore:
+            Type: Pass
+            Result: "bigger50Lesser75"
+            ResultPath: "$.sendingInfo.scoreProfile"
+            Next: NotifyUser
+          SetHighScore:
+            Type: Pass
+            Result: "bigger75"
+            ResultPath: "$.sendingInfo.scoreProfile"
+            Next: NotifyUser
  
 functions:
   getCampaign:
@@ -64,3 +143,8 @@ functions:
     handler: handler.getList
   organizeData:
     handler: handler.organizeData
+
+  verifyUserPlanLimits:
+    handler: handler.verifyUserPlanLimits
+  notifyUser:
+    handler: handler.notifyUser
