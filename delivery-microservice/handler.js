@@ -58,3 +58,40 @@ export const verifyUserPlanLimits = async (event) => {
     throw error
   }
 }
+
+export const notifyUser = async (event) => {
+  try {
+    const dependencies = { SES }
+    //const notification = await functions(dependencies).notifyUser(event.list, event.user, event.campaign/*, body*/) //working, just avoiding extra emails
+    return { notification: 'notification' };
+  } catch (error) {
+    // log where needed
+    // log to cloud watch
+    throw error
+  }
+};
+
+export const defineBatchSize = async (event) => {
+  const dependencies = {}
+  return functions(dependencies).defineBatchSize(event.sendingInfo.totalRecipients, event.sendingInfo.bodySize)
+};
+
+export const getRecipients = async (event) => {
+  const dependencies = { DB }
+  return functions(dependencies).getRecipients(event.list, event.batchInfo)
+};
+
+export const saveRecipientsToS3 = async () => {
+  const dependencies = { S3 }
+  return functions(dependencies).saveRecipientsToS3(event.recipientsList)
+}
+
+export const allRecipients = async () => {
+  const dependencies = {}
+  return functions(dependencies).allRecipients(event.s3Data.processedRecipients, event.batchInfo.totalRecipientsForEachMachine)
+}
+
+export const renderBodies = async () => {
+  const dependencies = { S3, LIQUIDEngine }
+  return functions(dependencies).renderBodies()
+}

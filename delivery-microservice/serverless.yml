@@ -133,7 +133,37 @@ stepFunctions:
             Result: "bigger75"
             ResultPath: "$.sendingInfo.scoreProfile"
             Next: NotifyUser
- 
+    # Email Preparation
+    emailPreparation:
+      definition: "Prepares (renders) all emails to be sent"
+          DefineBatchSize:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-defineBatchSize"
+            ResultPath: "$.batchInfo"
+            Next: GetRecipients
+          GetRecipients:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-getRecipients"
+            ResultPath: "$.recipientsList"
+            Next: SaveRecipientsInS3
+          SaveRecipientsInS3:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-saveRecipientsInS3"
+            ResultPath: "$.s3Data"
+            Next: SaveRecipientsInS3
+          AllRecipients:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-allRecipients"
+            Next: AllRecipients
+          RenderBodies:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-renderBodies"
+            End: true
+          # AllBodies:
+          #   Type: Task
+          #   Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-allBodies"
+          #   Next: true
+          # --------------------------------------------------------------------------------------------------------------------
 functions:
   getCampaign:
     handler: handler.getCampaign
@@ -148,3 +178,12 @@ functions:
     handler: handler.verifyUserPlanLimits
   notifyUser:
     handler: handler.notifyUser
+
+  defineBatchSize:
+    handler: handler.defineBatchSize
+  getRecipients:
+    handler: handler.getRecipients
+  allRecipients:
+    handler: handler.allRecipients
+  renderBodies:
+    handler: handler.renderBodies
