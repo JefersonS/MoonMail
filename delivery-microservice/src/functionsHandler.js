@@ -2,12 +2,12 @@ import { getCampaign } from './functions/getCampaign'
 import { getUser } from './functions/getUser'
 import { getList } from './functions/getList'
 import { organizeData } from './functions/organizeData'
-import { verifyUserPlanLimits } from './function/verifyUserPlanLimits'
+import { verifyUserPlanLimits } from './functions/verifyUserPlanLimits'
 import { notifyUser } from './functions/notifyUser'
 import { defineBatchSize } from './functions/defineBatchSize'
 import { getRecipients } from './functions/getRecipients'
 import { allRecipients } from './functions/allRecipients'
-import { saveRecipientsToS3 } from './functions/saveRecipientsToS3'
+import { saveRecipientsInS3 } from './functions/saveRecipientsInS3'
 import { renderBodies } from './functions/renderBodies'
 
 export const functions = dependencies => ({
@@ -19,7 +19,7 @@ export const functions = dependencies => ({
     notifyUser: notifyUser(dependencies),
     defineBatchSize: defineBatchSize(dependencies),
     getRecipients: getRecipients(dependencies),
-    saveRecipientsToS3: saveRecipientsToS3(dependencies),
+    saveRecipientsInS3: saveRecipientsInS3(dependencies),
     allRecipients: allRecipients(dependencies),
     renderBodies: renderBodies(dependencies)
 })

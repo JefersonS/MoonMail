@@ -1,11 +1,11 @@
 export const organizeData = () => (event) => {
-    const newEvent = Object.assign(
+    return Object.assign(
         cleanCampaignData(event.campaign),
         cleanListData(event.list),
         cleanUserData(event.user),
-        createSenderData(event.user),
-        createReputationData(user),
-        createThrottleData(user),
+        createSenderData(event.list.senderId, event.user),
+        createReputationData(event.user),
+        createThrottleData(event.user),
         createPlanData(event.user)
     )
 }
@@ -13,29 +13,29 @@ export const organizeData = () => (event) => {
 /* To be done later */
 
 export const cleanCampaignData = (campaign) => {
-    return campaign
+    return { campaignData: campaign }
 }
 
 export const cleanListData = (list) => {
-    return list
+    return { listData: list }
 }
 
 export const cleanUserData = (user) => {
-    return user
+    return { userData: user }
 }
 
 export const createSenderData = (senderId, user) => {
-    return user.sender.filter(s => s.id === senderId)
+    return { senderData: user.senders.filter(s => s.id === senderId) }
 }
 
 export const createReputationData = (user) => {
-    return user.reputation
+    return { reputationData: user.reputationData }
 }
 
 export const createThrottleData = (user) => {
-    return user.throttle
+    return { throttleData: user.throttle }
 }
 
 export const createPlanData = (user) => {
-    return user.plan
+    return { planData: user.plan }
 }

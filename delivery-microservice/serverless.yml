@@ -24,6 +24,7 @@ provider:
       Action:
         - dynamodb:*
         - ses:*
+        - s3:*
       Resource: "*"
 
 stepFunctions:
@@ -48,29 +49,32 @@ stepFunctions:
             Type: Task
             Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-getList"
             ResultPath: "$.list"
-            Next: CheckTotalRecipients
+            Next: OrganizeData
           OrganizeData:
-             Type: Task
-             Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-organizeData"
-             ResultPath: "$."
-             End: true
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-organizeData"
+            End: true
   # Data checks
     dataVerifier:
-      definition: "Checks all the data and reject anything out of place"
+      definition: 
+        Comment: "Checks all the data and reject anything out of place"
+        StartAt: VerifyUserPlanLimits
+        States:
           VerifyUserPlanLimits:
             Type: Task
             Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-verifyUserPlanLimits"
-            ResultPath: "$.planLimits"
-            Next: CheckTotalRecipients
+            ResultPath: "$.planLimits.status"
+            Next: VerifyUserPlan
           VerifyUserPlan:
             Type: Choice
+            Choices:
             - Variable: "$.planLimits.status"
               StringEquals: "passed"
               Next: PlanPassed
             - Variable: "$.planLimits.status"
               StringEquals: "rejected"
               Next: PlanRejected
-            default: PlanRejected
+            Default: PlanRejected
           PlanPassed:
             Type: Pass
             Next: VerifyUserScore
@@ -135,7 +139,10 @@ stepFunctions:
             Next: NotifyUser
     # Email Preparation
     emailPreparation:
-      definition: "Prepares (renders) all emails to be sent"
+      definition: 
+        Comment: "Prepares (renders) all emails to be sent"
+        StartAt: DefineBatchSize
+        States:
           DefineBatchSize:
             Type: Task
             Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-defineBatchSize"
@@ -150,11 +157,11 @@ stepFunctions:
             Type: Task
             Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-saveRecipientsInS3"
             ResultPath: "$.s3Data"
-            Next: SaveRecipientsInS3
+            Next: AllRecipients
           AllRecipients:
             Type: Task
             Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-allRecipients"
-            Next: AllRecipients
+            Next: RenderBodies
           RenderBodies:
             Type: Task
             Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-renderBodies"
@@ -183,6 +190,8 @@ functions:
     handler: handler.defineBatchSize
   getRecipients:
     handler: handler.getRecipients
+  saveRecipientsInS3:
+    handler: handler.saveRecipientsInS3
   allRecipients:
     handler: handler.allRecipients
   renderBodies:

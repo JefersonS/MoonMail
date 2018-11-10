@@ -1,4 +1,4 @@
-export const plansLimit = {
+export const plansLimits = {
     'free': {
         recipients: 2000,
         recipientsPerCampaign: 10,

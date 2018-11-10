@@ -31,6 +31,7 @@
     "babel-runtime": "^6.26.0",
     "dot": "^1.1.2",
     "json-size": "^1.0.0",
+    "liquid-node": "^3.0.0",
     "serverless-pseudo-parameters": "^2.2.0",
     "source-map-support": "^0.4.18",
     "zlib": "^1.0.5"

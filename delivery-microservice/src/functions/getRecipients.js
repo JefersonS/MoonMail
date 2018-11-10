@@ -17,6 +17,7 @@ const createInfo = (limit) => {
                 surname: 'Euclides ' + limit
             }
         })
+        limit --
     }
 
     return recipients

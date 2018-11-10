@@ -1,12 +1,15 @@
 export const renderBodies = ({ S3, LIQUIDEngine }) => async () => {
-    const body = await getBody(S3)
+    const { Body } = await getBody(S3)
     //const files = await getRecipientsFiles()
     //get content from each file
     //separate each recipient
-    const recipients = await getFileContent('file')
-    const recipientPromises = buildRecipientsPromises(LIQUIDEngine, recipients, body)
+    const s3Object = await getFileContent(S3)
+    const recipients = JSON.parse(s3Object.Body)
+
+    const recipientPromises = buildRecipientsPromises(LIQUIDEngine, recipients, Body)
     const bodies = await Promise.all(recipientPromises)
-    const bodyPromises = buildBodiesPromises(bodies)
+    console.log(bodies.length)
+    const bodyPromises = buildBodiesPromises(S3, bodies)
     const saved = await Promise.all(bodyPromises)
     return saved
 }
@@ -14,7 +17,7 @@ export const renderBodies = ({ S3, LIQUIDEngine }) => async () => {
 export const getBody = async (S3, bucket, key) => {
     const params = {
         Bucket: 'delivery-microservice-bodies-dev',
-        Key: 'testBody.html'
+        Key: 'body.html'
     }
 
     return await S3.getObject(params).promise()
@@ -29,10 +32,10 @@ export const getBody = async (S3, bucket, key) => {
 //     return await S3.listObjectsV2(params).promise()
 // }
 
-export const getFileContent = async (bucket, key) => {
+export const getFileContent = async (S3, bucket, key) => {
     const params = {
         Bucket: 'delivery-microservice-recipients-dev',
-        Key: 'key'
+        Key: 'test/test.txt'
     }
 
     return await S3.getObject(params).promise()
@@ -46,24 +49,24 @@ export const renderBody = async (LIQUIDEngine, recipient, body) => {
 export const buildRecipientsPromises = (LIQUIDEngine, recipients, body, execution = 0, promises = []) => {
     if (execution === recipients.length) return promises
 
-    promises.push(renderBody(LIQUIDEngine, recipient[0], body))
+    promises.push(renderBody(LIQUIDEngine, recipients[execution], body))
 
-    return buildRecipientsPromises(LIQUIDEngine, recipients, body, execution++, promises)
+    return buildRecipientsPromises(LIQUIDEngine, recipients, body, ++execution, promises)
 }
 
-export const saveBodyToS3 = async (S3, body) => {
+export const saveBodyToS3 = async (S3, body, execution) => {
     const params = {
-        ACL: options.ACL,
+        ACL: 'private',
         Body: body,
         Bucket: 'delivery-microservice-bodies-dev',
-        Key: 'userId/campaignId/body-date'
+        Key: 'userId/campaignId/body-date-' + new Date().getTime() + '.html'
     }
 
     return await S3.putObject(params).promise()
 }
 
-const buildBodiesPromises = async (S3, bodies, execution = 0, promises = []) => {
-    if (execution === recipients.length) return promises
+const buildBodiesPromises = (S3, bodies, execution = 0, promises = []) => {
+    if (execution === bodies.length) return promises
 
     promises.push(saveBodyToS3(S3, bodies[execution]))
 

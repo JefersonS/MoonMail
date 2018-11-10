@@ -8,10 +8,10 @@ export const verifyUserPlanLimits = ({ plansLimits }) => (planData) => {
 
 export const verifyRecipientsLimit = (amount, limit) => {
     //Do any recipient stuff
-    return amount < limit.totalRecipients
+    return amount < limit.recipients
 }
 
 export const verifyCampaignsLimit = (amount, limit) => {
     //Do any campaign stuff
-    return amount < limit.sentCampaigns
+    return amount < limit.campaigns
 }
