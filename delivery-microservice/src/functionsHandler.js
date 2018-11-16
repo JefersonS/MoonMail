@@ -5,6 +5,7 @@ import { organizeData } from './functions/organizeData'
 import { verifyUserPlanLimits } from './functions/verifyUserPlanLimits'
 import { notifyUser } from './functions/notifyUser'
 import { defineBatchSize } from './functions/defineBatchSize'
+import { manageDataSize } from './functions/manageDataSize'
 import { getRecipients } from './functions/getRecipients'
 import { allRecipients } from './functions/allRecipients'
 import { saveRecipientsInS3 } from './functions/saveRecipientsInS3'
@@ -18,6 +19,7 @@ export const functions = dependencies => ({
     verifyUserPlanLimits: verifyUserPlanLimits(dependencies),
     notifyUser: notifyUser(dependencies),
     defineBatchSize: defineBatchSize(dependencies),
+    manageDataSize: manageDataSize(dependencies),
     getRecipients: getRecipients(dependencies),
     saveRecipientsInS3: saveRecipientsInS3(dependencies),
     allRecipients: allRecipients(dependencies),

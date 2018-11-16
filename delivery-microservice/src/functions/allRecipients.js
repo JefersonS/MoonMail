@@ -1,4 +1,6 @@
-export const allRecipients = ({ }) => (processedRecipients, totalRecipients) => {
-    if (processedRecipients < totalRecipients) { throw 'should go back' } /* should actually throw a step error and then go back to state 1 */
+export const allRecipients = ({ customError }) => (renderInfo, batchInfo) => {
+    const totalRecipients = batchInfo.totalExecutionRecipients || batchInfo.totalRecipientsForEachMachine
+    const totalProcessedRecipients = batchInfo.totalProcessedRecipients + renderInfo.processedRecipients
+    if (totalProcessedRecipients < totalRecipients) { throw new customError('NEW_EXECUTION_REQUIRED', 'Not all recipients were processed yet') }
     else { return 'PASSED' }
 }

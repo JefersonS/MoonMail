@@ -1,24 +1,30 @@
-export const getRecipients = ({ DB }) => async (listId, batchInfo) => {
+export const getRecipients = ({ DB, deflateToBase }) => async (listId, batchInfo, renderInfo = {}) => {
     /* TODO */
     const limit = batchInfo.totalRecipientsForEachMachine
+    const lastIndex = renderInfo.lastIndex || null
+    console.log(lastIndex)
 
-    return createInfo(limit)
+    const recipientsInfo = createInfo(limit, lastIndex)
+    const recipients = deflateToBase(recipientsInfo.recipients)
+    return { recipients, lastIndex: recipientsInfo.lastIndex }
 }
 
 /* Demo Purposes only */
-const createInfo = (limit) => {
+const createInfo = (limit, lastIndex) => {
     const recipients = []
-    while (limit > 0) {
+    let count = lastIndex || 0
+    limit += count
+    while (count < limit) {
         recipients.push({
-            id: limit,
-            email: 'jefersonebs+' + limit + '@gmail.com',
+            id: count,
+            email: 'jefersonebs+' + count + '@gmail.com',
             metadata: {
-                name: 'Jeferson ' + limit,
-                surname: 'Euclides ' + limit
+                name: 'Jeferson ' + count,
+                surname: 'Euclides ' + count
             }
         })
-        limit --
+        count++
     }
 
-    return recipients
+    return { recipients, lastIndex: count }
 }

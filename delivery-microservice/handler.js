@@ -1,12 +1,13 @@
 import { DynamoDB, SES as SESCLIENT, S3 as S3CLIENT } from 'aws-sdk'
 import { functions } from './src/functionsHandler'
 import { plansLimits } from './src/libs/plansLimits'
+import { deflateToBase, unzipFromBase, customError } from './src/libs/utils'
 const Liquid = require("liquid-node")
 
 const DB = new DynamoDB.DocumentClient()
 const S3 = new S3CLIENT()
 const SES = new SESCLIENT()
-const LIQUIDEngine = new Liquid.Engine
+const LIQUID = new Liquid.Engine
 
 export const getCampaign = async (event) => {
   try {
@@ -78,18 +79,29 @@ export const notifyUser = async (event) => {
 export const defineBatchSize = async (event) => {
   try {
     const dependencies = {}
-    return functions(dependencies).defineBatchSize(event.sendingInfo.totalRecipients, event.sendingInfo.bodySize)    
+    return functions(dependencies).defineBatchSize(event.sendingInfo.totalRecipients, event.sendingInfo.bodySize)
   } catch (error) {
     // log where needed
     // log to cloud watch
     throw error
   }
 };
+
+export const manageDataSize = async (event) => {
+  try {
+    const dependencies = {}
+    return functions(dependencies).manageDataSize(event.batchInfo, event.errorInfo, event.renderInfo)
+  } catch (error) {
+    // log where needed
+    // log to cloud watch
+    throw error
+  }
+}
 
 export const getRecipients = async (event) => {
   try {
-    const dependencies = { DB }
-    return functions(dependencies).getRecipients(event.list, event.batchInfo)    
+    const dependencies = { DB, deflateToBase }
+    return functions(dependencies).getRecipients(event.list, event.batchInfo, event.renderInfo)
   } catch (error) {
     // log where needed
     // log to cloud watch
@@ -97,10 +109,10 @@ export const getRecipients = async (event) => {
   }
 };
 
-export const saveRecipientsInS3 = async (event) => {
+export const renderBodies = async (event) => {
   try {
-    const dependencies = { S3 }
-    return await functions(dependencies).saveRecipientsInS3(event.recipientsList)    
+    const dependencies = { S3, LIQUID, unzipFromBase, deflateToBase }
+    return functions(dependencies).renderBodies(event.recipientsList)
   } catch (error) {
     // log where needed
     // log to cloud watch
@@ -110,20 +122,9 @@ export const saveRecipientsInS3 = async (event) => {
 
 export const allRecipients = async (event) => {
   try {
-    const dependencies = {}
+    const dependencies = { customError }
     console.log(functions(dependencies).allRecipients)
-    return functions(dependencies).allRecipients(event.s3Data.processedRecipients, event.batchInfo.totalRecipientsForEachMachine)    
-  } catch (error) {
-    // log where needed
-    // log to cloud watch
-    throw error
-  }
-}
-
-export const renderBodies = async (event) => {
-  try {
-    const dependencies = { S3, LIQUIDEngine }
-    return functions(dependencies).renderBodies()    
+    return functions(dependencies).allRecipients(event.renderInfo, event.batchInfo)
   } catch (error) {
     // log where needed
     // log to cloud watch

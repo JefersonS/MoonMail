@@ -147,29 +147,61 @@ stepFunctions:
             Type: Task
             Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-defineBatchSize"
             ResultPath: "$.batchInfo"
+            Next: ManageDataSize
+          ManageDataSize:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-manageDataSize"
+            ResultPath: "$.batchInfo"
             Next: GetRecipients
           GetRecipients:
             Type: Task
             Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-getRecipients"
             ResultPath: "$.recipientsList"
-            Next: SaveRecipientsInS3
-          SaveRecipientsInS3:
+            Catch:
+            - ErrorEquals:
+              - States.DataLimitExceeded
+              ResultPath: "$.errorInfo"
+              Next: ReduceBatchSize
+            - ErrorEquals:
+              - States.Timeout
+              ResultPath: "$.errorInfo"
+              Next: ReduceBatchSize
+            Next: RenderBodies
+          # SaveRecipientsInS3:
+          #   Type: Task
+          #   Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-saveRecipientsInS3"
+          #   ResultPath: "$.s3Data"
+          #   Next: AllRecipients
+          RenderBodies:
             Type: Task
-            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-saveRecipientsInS3"
-            ResultPath: "$.s3Data"
+            TimeoutSeconds: 120
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-renderBodies"
+            ResultPath: "$.renderInfo"
+            Catch:
+            - ErrorEquals:
+              - States.DataLimitExceeded
+              ResultPath: "$.errorInfo"
+              Next: ReduceBatchSize
+            - ErrorEquals:
+              - States.Timeout
+              ResultPath: "$.errorInfo"
+              Next: ReduceBatchSize
             Next: AllRecipients
           AllRecipients:
             Type: Task
             Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-allRecipients"
-            Next: RenderBodies
-          RenderBodies:
-            Type: Task
-            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-renderBodies"
+            Catch:
+            - ErrorEquals:
+              - NEW_EXECUTION_REQUIRED
+              ResultPath: "$.errorInfo"
+              Next: ProcessRemainingRecipients
             End: true
-          # AllBodies:
-          #   Type: Task
-          #   Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-allBodies"
-          #   Next: true
+          ReduceBatchSize:
+            Type: Pass
+            Next: ManageDataSize
+          ProcessRemainingRecipients:
+            Type: Pass
+            Next: ManageDataSize
           # --------------------------------------------------------------------------------------------------------------------
 functions:
   getCampaign:
@@ -180,7 +212,8 @@ functions:
     handler: handler.getList
   organizeData:
     handler: handler.organizeData
-
+  manageDataSize:
+    handler: handler.manageDataSize
   verifyUserPlanLimits:
     handler: handler.verifyUserPlanLimits
   notifyUser:
@@ -188,11 +221,12 @@ functions:
 
   defineBatchSize:
     handler: handler.defineBatchSize
+  
   getRecipients:
     handler: handler.getRecipients
   saveRecipientsInS3:
     handler: handler.saveRecipientsInS3
-  allRecipients:
-    handler: handler.allRecipients
   renderBodies:
     handler: handler.renderBodies
+  allRecipients:
+    handler: handler.allRecipients
